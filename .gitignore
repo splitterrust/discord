@@ -1,2 +1,6 @@
 /target
 **/*.rs.bk
+**/.env
+
+# Copyright concerns
+src/static/splittermond_logo.png

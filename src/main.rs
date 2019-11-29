@@ -1,73 +1,78 @@
-use std::env;
+use dotenv::dotenv;
+
+use std::{collections::HashSet, env, sync::Arc};
 
 use serenity::{
-    model::{channel::Message, gateway::Ready},
+    client::bridge::gateway::ShardManager,
+    framework::{standard::macros::group, StandardFramework},
+    model::{event::ResumedEvent, gateway::Ready},
     prelude::*,
-    utils::MessageBuilder,
 };
+
+use log::{error, info};
+
+mod commands;
+use commands::spell::*;
+
+group!({
+    name: "spelltome",
+    options: {},
+    commands: [get_spell, test]
+});
+
+struct ShardManagerContainer;
+
+impl TypeMapKey for ShardManagerContainer {
+    type Value = Arc<Mutex<ShardManager>>;
+}
 
 struct Handler;
 
 impl EventHandler for Handler {
-    // Set a handler for the `message` event - so that whenever a new message
-    // is received - the closure (or function) passed will be called.
-    //
-    // Event handlers are dispatched through a threadpool, and so multiple
-    // events can be dispatched simultaneously.
-    fn message(&self, ctx: Context, msg: Message) {
-        if msg.content == "!ping" {
-            let channel = match msg.channel_id.to_channel(&ctx) {
-                Ok(channel) => channel,
-                Err(why) => {
-                    println!("Error getting channel: {:?}", why);
-                    return;
-                },
-            };
-
-            // The message builder allows for creating a message by
-            // mentioning users dynamically, pushing "safe" versions of
-            // content (such as bolding normalized content), displaying
-            // emojis, and more.
-            let response = MessageBuilder::new()
-                .push("User ")
-                .push_bold_safe(msg.author.name)
-                .push(" used the 'ping' command in the ")
-                .mention(&channel)
-                .push(" channel")
-                .build();
-
-            if let Err(why) = msg.channel_id.say(&ctx.http, &response) {
-                println!("Error sending message: {:?}", why);
-            }
-        }
+    fn ready(&self, _: Context, ready: Ready) {
+        info!("Connected as {}", ready.user.name);
     }
 
-    // Set a handler to be called on the `ready` event. This is called when a
-    // shard is booted, and a READY payload is sent by Discord. This payload
-    // contains data like the current user's guild Ids, current user data,
-    // private channels, and more.
-    //
-    // In this case, just print what the current user's username is.
-    fn ready(&self, _: Context, ready: Ready) {
-        println!("{} is connected!", ready.user.name);
+    fn resume(&self, _: Context, _: ResumedEvent) {
+        info!("Resumed");
     }
 }
 
 fn main() {
-    // Configure the client with your Discord bot token in the environment.
-    let token = env::var("DISCORD_TOKEN")
-        .expect("Expected a token in the environment");
+    dotenv().ok();
 
-    // Create a new instance of the Client, logging in as a bot. This will
-    // automatically prepend your bot token with "Bot ", which is a requirement
-    // by Discord for bot users.
+    // Initialize the logger to use environment variables.
+    //
+    // In this case, a good default is setting the environment variable
+    // `RUST_LOG` to debug`.
+    env_logger::init();
+
+    let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
+
     let mut client = Client::new(&token, Handler).expect("Err creating client");
 
-    // Finally, start a single shard, and start listening to events.
-    //
-    // Shards will automatically attempt to reconnect, and will perform
-    // exponential backoff until it reconnects.
+    {
+        let mut data = client.data.write();
+        data.insert::<ShardManagerContainer>(Arc::clone(&client.shard_manager));
+    }
+
+    let owners = match client.cache_and_http.http.get_current_application_info() {
+        Ok(info) => {
+            let mut set = HashSet::new();
+            set.insert(info.owner.id);
+
+            set
+        }
+        Err(why) => panic!("Couldn't get application info: {:?}", why),
+    };
+
+    client.with_framework(
+        StandardFramework::new()
+            .configure(|c| c.owners(owners).prefix("~"))
+            .group(&SPELLTOME_GROUP),
+    );
+
     if let Err(why) = client.start() {
-        println!("Client error: {:?}", why);
+        error!("Client error: {:?}", why);
     }
 }
