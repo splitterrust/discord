@@ -5,7 +5,7 @@ use serenity::framework::standard::{macros::command, Args, CommandError, Command
 use serenity::http::AttachmentType;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-use splitterrust_db::models::spell::Spell as SpellSchools;
+use splitterrust_db::models::spell_schools::Spell as SpellSchools;
 use std::path::Path;
 
 #[command]
@@ -18,7 +18,7 @@ pub fn get_spell(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult 
             let json: SpellSchools =  match result.json() {
                 Ok(j) => j,
                 Err(e) => {
-                    error!("{:?}", e);
+                    error!("Error retrieving json: {:?}", e);
                     return Err(CommandError::from(e))
                 }
             };
