@@ -15,11 +15,11 @@ pub fn get_spell(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult 
 
     match reqwest::get(&url) {
         Ok(mut result) => {
-            let json: SpellSchools =  match result.json() {
+            let json: SpellSchools = match result.json() {
                 Ok(j) => j,
                 Err(e) => {
                     error!("Error retrieving json: {:?}", e);
-                    return Err(CommandError::from(e))
+                    return Err(CommandError::from(e));
                 }
             };
 
