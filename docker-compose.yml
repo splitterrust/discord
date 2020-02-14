@@ -1,20 +1,21 @@
 version: '3.1'
 
 services:
-  discord:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    networks:
-      - default
-    env_file:
-      # the first one does not contain the discord token but to show which
-      # env options there are, I put them all empty in there and overwrite
-      # it with .env which is untracked
-      - .env_docker
-      - .env
+  db:
+    image: postgres:12.1
+    restart: always
+    ports:
+      - 5433:5432
+    env_file: .env_docker
 
-networks:
-  default:
-      external:
-        name: my-network
+  server:
+    image: splitterrust_server
+    restart: always
+    ports:
+        - 8088:8088
+    env_file: .env_docker
+
+  discord:
+    image: splitterrust_discord
+    env_file: .env_docker
+
