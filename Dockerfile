@@ -7,7 +7,7 @@ RUN USER=root cargo new splitterrust_discord
 
 # Install deps, this will cache them so we can
 # build the container faster for development.
-COPY Cargo.toml Cargo.lock /usr/src/splitterrust_discord/
+COPY Cargo.toml /usr/src/splitterrust_discord/
 
 WORKDIR /usr/src/splitterrust_discord
 
