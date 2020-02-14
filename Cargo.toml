@@ -18,4 +18,5 @@ serenity = { version = "0.7", features = ["framework", "standard_framework"] }
 reqwest = "0.9"
 serde = "1.0"
 serde_json = "1.0"
+# keep this one in the last line till pushed/pulled from crates.io
 splitterrust_db = { path = "db/" }
