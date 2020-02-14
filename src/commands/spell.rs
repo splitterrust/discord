@@ -7,11 +7,15 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 use splitterrust_db::models::spell_schools::Spell as SpellSchools;
 use std::path::Path;
+use std::env;
 
 #[command]
 pub fn get_spell(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     let name = args.rest();
-    let url = format!("http://localhost:8088/spell/{}", name);
+    // TODO get this only once and pass it to the functions
+    //      each call to env would be expensive
+    let server = env::var("BACKEND_SERVER").expect("Expected the BACKEND_SERVER in the environment");
+    let url = format!("{}/spell/{}", server, name);
 
     match reqwest::get(&url) {
         Ok(mut result) => {

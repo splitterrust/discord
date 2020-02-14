@@ -9,9 +9,6 @@ RUN USER=root cargo new splitterrust_discord
 # build the container faster for development.
 COPY Cargo.toml Cargo.lock /usr/src/splitterrust_discord/
 
-#RUN apt-get update && \
-#    apt-get install -y libpq5
-
 WORKDIR /usr/src/splitterrust_discord
 
 # Remove last line, which is our local library (for the moment)
@@ -19,9 +16,10 @@ RUN sed -i '$ d' Cargo.toml
 
 RUN cargo build --release
 
-# Now copy source files and install the application.
+# Now copy source files and build the application.
 COPY . .
-RUN cargo install --path .
+
+RUN cargo build --release
 
 # Build container with only the build package for a
 # smaller image.
@@ -33,7 +31,7 @@ RUN apt-get update && apt-get install -y libpq5
 
 ENV DISCORD /usr/local/bin/splitterrust_discord
 
-COPY --from=builder /usr/local/cargo/bin/splitterrust_discord $DISCORD
+COPY --from=builder /usr/src/splitterrust_discord/target/release/splitterrust_discord $DISCORD
 COPY docker_entrypoint.sh /usr/local/bin/
 
 RUN ln -s /usr/local/bin/docker_entrypoint.sh / # backwards compat
