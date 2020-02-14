@@ -1,0 +1,20 @@
+version: '3.1'
+
+services:
+  discord:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - default
+    env_file:
+      # the first one does not contain the discord token but to show which
+      # env options there are, I put them all empty in there and overwrite
+      # it with .env which is untracked
+      - .env_docker
+      - .env
+
+networks:
+  default:
+      external:
+        name: my-network

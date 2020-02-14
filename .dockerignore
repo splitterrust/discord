@@ -1,0 +1,9 @@
+**/target/
+Dockerfile
+docker-compose.yml
+README.md
+.git/
+.gitignore
+.gitmodules
+LICENSE
+.env
