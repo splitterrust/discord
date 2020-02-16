@@ -13,12 +13,18 @@ use log::{error, info};
 
 mod commands;
 use commands::spell::*;
+use commands::dice::*;
 
 group!({
     name: "spelltome",
     options: {},
-    commands: [get_spell, test]
+    commands: [get_spell, test, roll]
 });
+//group!({
+//    name: "dice",
+//    options: {},
+//    commands: [roll]
+//});
 
 struct ShardManagerContainer;
 
