@@ -129,7 +129,7 @@ fn evaluate_roll(mut roll: Roll) -> Roll {
 fn roll_dice(amount: u32, eyes: u32) -> Vec<u32> {
     let mut results = vec![];
     for _ in 0..amount {
-        let result = rand::thread_rng().gen_range(1, eyes);
+        let result = rand::thread_rng().gen_range(1, eyes + 1); // high end of range is exclusive!
         results.push(result);
     }
     results
