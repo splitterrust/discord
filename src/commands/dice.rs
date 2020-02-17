@@ -1,10 +1,9 @@
+use log::error;
 use rand::Rng;
 use regex::Regex;
-use log::{error};
 use serenity::framework::standard::{macros::command, Args, CommandError, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-
 
 struct Roll {
     roll_string: String,
@@ -15,13 +14,13 @@ impl Roll {
     fn calculate_roll_result(&mut self) {
         self.roll_result += self.roll_values.iter().sum::<u32>()
     }
-    
     fn generate_roll_result_string(&self) -> String {
         let mut result = String::from("(");
         for value in &self.roll_values {
             result += &value.to_string();
-            result += ", "; 
+            result += ", ";
         }
+        // remove trailing ','
         result.pop();
         result.pop();
         result += ")";
@@ -35,12 +34,11 @@ pub fn roll(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     // TODO get this only once and pass it to the functions
     //      each call to env would be expensive
     let re = Regex::new(r"(\d{1,10}\s*[wWdD]?\d{0,10})\s*([+\-2/\*]?)").unwrap();
-    //print!("Rolling {}\n", input);
     let result = create_result(re, input);
     let rolls = &result.0;
     let operators = &result.1;
     let mut roll_result_string = String::new();
-    for (n,roll) in rolls.iter().enumerate() {
+    for (n, roll) in rolls.iter().enumerate() {
         roll_result_string += &roll.generate_roll_result_string();
         roll_result_string += " ";
         if n < operators.len() {
@@ -50,12 +48,10 @@ pub fn roll(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     }
     let msg = msg.channel_id.send_message(&ctx.http, |m| {
         m.content(format!("Your roll result was {}", sum_rolls(&result)));
-        m.embed( |e| {
+        m.embed(|e| {
             e.title("Detailed Result:");
             e.description("See how the result was generated");
-            e.fields(vec![
-                ("Rolls:", roll_result_string, false),
-            ]);
+            e.fields(vec![("Rolls:", roll_result_string, false)]);
             e
         });
         m
@@ -65,7 +61,6 @@ pub fn roll(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
         return Err(CommandError::from(why));
     }
     Ok(())
-    
 }
 
 fn sum_rolls(result: &(Vec<Roll>, Vec<String>)) -> u32 {
