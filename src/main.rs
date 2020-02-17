@@ -13,11 +13,17 @@ use log::{error, info};
 
 mod commands;
 use commands::spell::*;
+use commands::dice::*;
 
 group!({
     name: "spelltome",
     options: {},
-    commands: [get_spell, test]
+    commands: [get_spell, test, roll]
+});
+group!({
+    name: "dice",
+    options: {},
+    commands: [roll]
 });
 
 struct ShardManagerContainer;
@@ -69,7 +75,8 @@ fn main() {
     client.with_framework(
         StandardFramework::new()
             .configure(|c| c.owners(owners).prefix("~"))
-            .group(&SPELLTOME_GROUP),
+            .group(&SPELLTOME_GROUP)
+            .group(&DICE_GROUP)
     );
 
     if let Err(why) = client.start() {
