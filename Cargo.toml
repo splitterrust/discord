@@ -1,7 +1,10 @@
 [package]
 name = "splitterrust_discord"
 version = "0.1.0"
-authors = ["Maximilian Konter <biskit1943@gmx.de>"]
+authors = [
+    "Maximilian Arlt <queso1307@gmail.com>",
+    "Maximilian Konter <biskit1943@gmx.de>",
+]
 edition = "2018"
 repository = "https://github.com/splitterrust/discord"
 license-file = "LICENSE"
