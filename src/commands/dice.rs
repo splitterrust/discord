@@ -1,7 +1,12 @@
 use log::error;
 use rand::Rng;
 use regex::Regex;
-use serenity::framework::standard::{macros::command, Args, CommandError, CommandResult};
+use serenity::framework::standard::{
+    macros::command,
+    Args,
+    CommandError,
+    CommandResult,
+};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 
