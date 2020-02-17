@@ -1,6 +1,5 @@
-use log::{error, info};
+use log::error;
 use reqwest;
-use serde_json::json;
 use serenity::framework::standard::{macros::command, Args, CommandError, CommandResult};
 use serenity::http::AttachmentType;
 use serenity::model::prelude::*;
@@ -16,6 +15,7 @@ pub fn get_spell(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult 
     //      each call to env would be expensive
     let server = env::var("BACKEND_SERVER").expect("Expected the BACKEND_SERVER in the environment");
     let url = format!("{}/spell/{}", server, name);
+    println!("{}", url);
 
     match reqwest::get(&url) {
         Ok(mut result) => {
