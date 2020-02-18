@@ -1,0 +1,7 @@
+edition = "2018"
+enum_discrim_align_threshold = 50
+format_strings = true
+imports_layout = "Vertical"
+struct_field_align_threshold = 50
+version = "Two"
+wrap_comments = true

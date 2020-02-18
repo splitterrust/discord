@@ -1,6 +1,7 @@
 /target
 **/*.rs.bk
 **/.env
+Cargo.lock
 
 # Copyright concerns
 src/static/splittermond_logo.png

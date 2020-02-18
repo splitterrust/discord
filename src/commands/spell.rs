@@ -1,21 +1,27 @@
-use log::{error, info};
+use log::error;
 use reqwest;
-use serde_json::json;
-use serenity::framework::standard::{macros::command, Args, CommandError, CommandResult};
+use serenity::framework::standard::{
+    macros::command,
+    Args,
+    CommandError,
+    CommandResult,
+};
 use serenity::http::AttachmentType;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use splitterrust_db::models::spell_schools::Spell as SpellSchools;
-use std::path::Path;
 use std::env;
+use std::path::Path;
 
 #[command]
 pub fn get_spell(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     let name = args.rest();
     // TODO get this only once and pass it to the functions
     //      each call to env would be expensive
-    let server = env::var("BACKEND_SERVER").expect("Expected the BACKEND_SERVER in the environment");
+    let server =
+        env::var("BACKEND_SERVER").expect("Expected the BACKEND_SERVER in the environment");
     let url = format!("{}/spell/{}", server, name);
+    println!("{}", url);
 
     match reqwest::get(&url) {
         Ok(mut result) => {
