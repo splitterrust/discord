@@ -33,32 +33,36 @@ pub fn roll(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     let input = args.rest().to_string();
     // TODO get this only once and pass it to the functions
     //      each call to env would be expensive
-    let re = Regex::new(r"(\d{1,10}\s*[wWdD]?\d{0,10})\s*([+\-2/\*]?)").unwrap();
-    let result = create_result(re, input);
-    let rolls = &result.0;
-    let operators = &result.1;
-    let mut roll_result_string = String::new();
-    for (n, roll) in rolls.iter().enumerate() {
-        roll_result_string += &roll.generate_roll_result_string();
-        roll_result_string += " ";
-        if n < operators.len() {
-            roll_result_string += &operators[n];
+    if input.contains(".") || input.contains("(") || input.contains(")") {
+    } else {
+        let re = Regex::new(r"(\d{1,10}\s*[wWdD]?\d{0,10})\s*([+\-2/\*]?)").unwrap();
+        //    let re = Regex::new(r"((?<![^\s\+\-\*\/])\d+[wWdD]\d*\s*[\+\-\*\.]?)|((?<![wWdD\d{1,10}\(\)])\d+\s*[\+\-\*\/]?(?![^\d\s]))").unwrap();
+        let result = create_result(re, input);
+        let rolls = &result.0;
+        let operators = &result.1;
+        let mut roll_result_string = String::new();
+        for (n, roll) in rolls.iter().enumerate() {
+            roll_result_string += &roll.generate_roll_result_string();
             roll_result_string += " ";
+            if n < operators.len() {
+                roll_result_string += &operators[n];
+                roll_result_string += " ";
+            }
         }
-    }
-    let msg = msg.channel_id.send_message(&ctx.http, |m| {
-        m.content(format!("Your roll result was {}", sum_rolls(&result)));
-        m.embed(|e| {
-            e.title("Detailed Result:");
-            e.description("See how the result was generated");
-            e.fields(vec![("Rolls:", roll_result_string, false)]);
-            e
+        let msg = msg.channel_id.send_message(&ctx.http, |m| {
+            m.content(format!("Your roll result was {}", sum_rolls(&result)));
+            m.embed(|e| {
+                e.title("Detailed Result:");
+                e.description("See how the result was generated");
+                e.fields(vec![("Rolls:", roll_result_string, false)]);
+                e
+            });
+            m
         });
-        m
-    });
-    if let Err(why) = msg {
-        error!("Error sending message: {:?}", why);
-        return Err(CommandError::from(why));
+        if let Err(why) = msg {
+            error!("Error sending message: {:?}", why);
+            return Err(CommandError::from(why));
+        }
     }
     Ok(())
 }
@@ -93,10 +97,11 @@ fn create_result(re: Regex, input: String) -> (Vec<Roll>, Vec<String>) {
         };
         let dice_in_roll = Regex::new(r"[dDwW]").unwrap();
         if !dice_in_roll.is_match(&token[1]) {
+            let value = token[1].trim();
             rolls.push(Roll {
-                roll_string: token[1].to_string(),
-                roll_values: vec![token[1].parse().expect("no number")],
-                roll_result: token[1].parse().expect("no number"),
+                roll_string: value.to_string(),
+                roll_values: vec![value.parse().expect("no number")],
+                roll_result: value.parse().expect("no number"),
             });
         } else {
             rolls.push(evaluate_roll(roll));
