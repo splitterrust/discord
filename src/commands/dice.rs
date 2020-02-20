@@ -122,8 +122,6 @@ fn create_result<'a>(input: &'a str) -> Option<(Vec<Roll>, Box<Vec<&'a str>>)> {
         );
         return None;
     }
-    println!("{:?}", operations);
-    println!("{:?}", input_split);
     let mut rolls: Vec<Roll> = vec![];
     for token in input_split {
         let token = token.trim();
