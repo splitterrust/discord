@@ -76,7 +76,7 @@ fn sum_rolls<'a>(result: &(Vec<Roll>, Box<Vec<&'a str>>)) -> u32 {
 }
 
 #[test]
-fn test_stuff() {
+fn test_roll() {
     let mut input = String::new();
     io::stdin()
         .read_line(&mut input)
@@ -131,11 +131,11 @@ fn create_result<'a>(input: &'a str) -> Option<(Vec<Roll>, Box<Vec<&'a str>>)> {
             .all(|c| (c == 'd' || c == 'D' || c == 'w' || c == 'W' || c.is_numeric()))
             && token.contains(|c| (c == 'd' || c == 'D' || c == 'w' || c == 'W'))
         {
-            rolls.push(evaluate_roll(Roll {
-                roll_string: token.to_string(),
-                roll_result: 0,
-                roll_values: vec![],
-            }));
+            let roll = match evaluate_roll(Roll{roll_string : token.to_string(), roll_result : 0, roll_values : vec![]}) {
+                Some(roll) => roll,
+                None => return None,
+            };
+            rolls.push(roll);
         } else if token.parse::<u32>().is_ok() {
             let value = token.trim().parse::<u32>().unwrap(); // should be okay since is_okay check
             rolls.push(Roll {
@@ -152,10 +152,10 @@ fn create_result<'a>(input: &'a str) -> Option<(Vec<Roll>, Box<Vec<&'a str>>)> {
     Some((rolls, operators))
 }
 
-fn evaluate_roll(mut roll: Roll) -> Roll {
-    let re = Regex::new(r"(\d{1,10})[dDwW](\d{1,10})").unwrap();
+fn evaluate_roll(mut roll: Roll) -> Option<Roll> {
+    let re = Regex::new(r"(\d{1,2})[dDwW](\d{1,2})").unwrap();
     let m = re.captures(&roll.roll_string.trim()).unwrap();
-    roll.roll_values = roll_dice(
+    roll.roll_values = match roll_dice(
         m.get(1)
             .unwrap()
             .as_str()
@@ -163,16 +163,22 @@ fn evaluate_roll(mut roll: Roll) -> Roll {
             .parse()
             .expect("Not a number"),
         m.get(2).unwrap().as_str().parse().expect("not a Number"),
-    );
+    ) {
+        Some(r) => r,
+        None => return None,
+    };
     roll.calculate_roll_result();
-    roll
+    Some(roll)
 }
 
-fn roll_dice(amount: u32, eyes: u32) -> Vec<u32> {
+fn roll_dice(amount: u32, eyes: u32) -> Option<Vec<u32>> {
     let mut results = vec![];
+    if amount > 64 ||  eyes > 64 {
+        return None;
+    }
     for _ in 0..amount {
         let result = rand::thread_rng().gen_range(1, eyes + 1); // high end of range is exclusive!
         results.push(result);
     }
-    results
+    Some(results)
 }
