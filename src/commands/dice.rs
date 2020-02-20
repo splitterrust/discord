@@ -1,9 +1,10 @@
-use log::error;
+use log::{error, info};
 use rand::Rng;
 use regex::Regex;
 use serenity::framework::standard::{macros::command, Args, CommandError, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
+use std::io;
 
 struct Roll {
     roll_string: String,
@@ -33,22 +34,15 @@ pub fn roll(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     let input = args.rest().to_string();
     // TODO get this only once and pass it to the functions
     //      each call to env would be expensive
-    if input.contains(".") || input.contains("(") || input.contains(")") {
+
+    if input.contains(|c| (c == '.' || c == '(' || c == ')' || c == '^')) {
     } else {
-        let re = Regex::new(r"(\d{1,10}\s*[wWdD]?\d{0,10})\s*([+\-2/\*]?)").unwrap();
-        //    let re = Regex::new(r"((?<![^\s\+\-\*\/])\d+[wWdD]\d*\s*[\+\-\*\.]?)|((?<![wWdD\d{1,10}\(\)])\d+\s*[\+\-\*\/]?(?![^\d\s]))").unwrap();
-        let result = create_result(re, input);
-        let rolls = &result.0;
-        let operators = &result.1;
-        let mut roll_result_string = String::new();
-        for (n, roll) in rolls.iter().enumerate() {
-            roll_result_string += &roll.generate_roll_result_string();
-            roll_result_string += " ";
-            if n < operators.len() {
-                roll_result_string += &operators[n];
-                roll_result_string += " ";
-            }
-        }
+        let result = create_result(&input);
+        let result = match result {
+            Some(r) => r,
+            None => return Ok(()),
+        };
+        let roll_result_string = create_result_string(&result);
         let msg = msg.channel_id.send_message(&ctx.http, |m| {
             m.content(format!("Your roll result was {}", sum_rolls(&result)));
             m.embed(|e| {
@@ -67,7 +61,7 @@ pub fn roll(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     Ok(())
 }
 
-fn sum_rolls(result: &(Vec<Roll>, Vec<String>)) -> u32 {
+fn sum_rolls<'a>(result: &(Vec<Roll>, Box<Vec<&'a str>>)) -> u32 {
     let mut rolls_summed: u32 = result.0[0].roll_result;
     for (i, operator) in result.1.iter().enumerate() {
         match operator.trim() {
@@ -81,33 +75,83 @@ fn sum_rolls(result: &(Vec<Roll>, Vec<String>)) -> u32 {
     rolls_summed
 }
 
-fn create_result(re: Regex, input: String) -> (Vec<Roll>, Vec<String>) {
-    let mut operations = vec![];
-    let mut rolls = vec![];
-    for token in re.captures_iter(&input.trim()) {
-        match &token[2] {
-            "" => (),
-            "+" | "-" | "/" | "*" => operations.push(token[2].to_string()),
-            _ => continue,
-        };
-        let roll = Roll {
-            roll_string: token[1].trim().to_string(),
-            roll_values: vec![],
-            roll_result: 0,
-        };
-        let dice_in_roll = Regex::new(r"[dDwW]").unwrap();
-        if !dice_in_roll.is_match(&token[1]) {
-            let value = token[1].trim();
-            rolls.push(Roll {
-                roll_string: value.to_string(),
-                roll_values: vec![value.parse().expect("no number")],
-                roll_result: value.parse().expect("no number"),
-            });
-        } else {
-            rolls.push(evaluate_roll(roll));
+#[test]
+fn test_stuff() {
+    let mut input = String::new();
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Line could not be read!");
+    let test = create_result(&input);
+    let test = match test {
+        Some(r) => r,
+        None => return,
+    };
+    let value = sum_rolls(&test);
+    let result = create_result_string(&test);
+    println!("Value {}", value);
+    println!("Result {}", result);
+}
+
+fn create_result_string(result: &(Vec<Roll>, Box<Vec<&str>>)) -> String {
+    let rolls = &result.0;
+    let operators = &result.1;
+    let mut roll_result_string = String::new();
+    for (n, roll) in rolls.iter().enumerate() {
+        roll_result_string += &roll.generate_roll_result_string();
+        roll_result_string += " ";
+        if n < operators.len() {
+            roll_result_string += &operators[n];
+            roll_result_string += " ";
         }
     }
-    return (rolls, operations);
+    roll_result_string
+}
+
+fn create_result<'a>(input: &'a str) -> Option<(Vec<Roll>, Box<Vec<&'a str>>)> {
+    let operations: Vec<&str> = input
+        .matches(|c| (c == '+' || c == '-' || c == '*' || c == '/'))
+        .collect();
+    let input_split: Vec<&str> = input
+        .split(|c| c == '+' || c == '-' || c == '/' || c == '*')
+        .collect();
+    if operations.len() != input_split.len() - 1 {
+        error!(
+            "Operator length missmatch!\nOperator length: {} \nToken length: {}",
+            operations.len().to_string(),
+            input_split.len().to_string()
+        );
+        return None;
+    }
+    println!("{:?}", operations);
+    println!("{:?}", input_split);
+    let mut rolls: Vec<Roll> = vec![];
+    for token in input_split {
+        let token = token.trim();
+        //if token.contains(|c| (c == 'd' || c == 'D' || c == 'w' || c == 'W')) {
+        if token
+            .chars()
+            .all(|c| (c == 'd' || c == 'D' || c == 'w' || c == 'W' || c.is_numeric()))
+            && token.contains(|c| (c == 'd' || c == 'D' || c == 'w' || c == 'W'))
+        {
+            rolls.push(evaluate_roll(Roll {
+                roll_string: token.to_string(),
+                roll_result: 0,
+                roll_values: vec![],
+            }));
+        } else if token.parse::<u32>().is_ok() {
+            let value = token.trim().parse::<u32>().unwrap(); // should be okay since is_okay check
+            rolls.push(Roll {
+                roll_string: token.to_string(),
+                roll_values: vec![value],
+                roll_result: value,
+            });
+        } else {
+            error!("Not matching token in input!");
+            return None;
+        }
+    }
+    let operators = Box::new(operations);
+    Some((rolls, operators))
 }
 
 fn evaluate_roll(mut roll: Roll) -> Roll {
