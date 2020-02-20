@@ -28,7 +28,7 @@ matrix:
     name: "Rustfmt & Clippy"
     script:
     - rustup component add rustfmt clippy
-    - cargo clippy -- -D warnings
+    - cargo clippy  # -- -D warnings # Add this again when the PR 5183 was released
     - cargo fmt -- --check
     - cargo test
   - rust: 1.40.0

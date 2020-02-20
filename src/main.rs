@@ -104,9 +104,11 @@ fn main() {
     client.with_framework(
         StandardFramework::new()
             .configure(|c| c.owners(owners).prefix(&prefix))
-            .bucket("basic", |b| b.delay(delay_).time_span(time_span_).limit(limit_))
+            .bucket("basic", |b| {
+                b.delay(delay_).time_span(time_span_).limit(limit_)
+            })
             .group(&SPELLTOME_GROUP)
-            .group(&DICE_GROUP)
+            .group(&DICE_GROUP),
     );
 
     if let Err(why) = client.start() {
