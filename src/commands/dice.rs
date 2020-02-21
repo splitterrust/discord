@@ -1,3 +1,4 @@
+use cfg_if;
 use log::{error, info};
 use rand::Rng;
 use regex::Regex;
@@ -6,6 +7,7 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 use std::io;
 
+#[derive(Debug)]
 struct Roll {
     roll_string: String,
     roll_values: Vec<u32>,
@@ -75,23 +77,6 @@ fn sum_rolls<'a>(result: &(Vec<Roll>, Box<Vec<&'a str>>)) -> u32 {
     rolls_summed
 }
 
-#[test]
-fn test_roll() {
-    let mut input = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Line could not be read!");
-    let test = create_result(&input);
-    let test = match test {
-        Some(r) => r,
-        None => return,
-    };
-    let value = sum_rolls(&test);
-    let result = create_result_string(&test);
-    println!("Value {}", value);
-    println!("Result {}", result);
-}
-
 fn create_result_string(result: &(Vec<Roll>, Box<Vec<&str>>)) -> String {
     let rolls = &result.0;
     let operators = &result.1;
@@ -131,7 +116,11 @@ fn create_result<'a>(input: &'a str) -> Option<(Vec<Roll>, Box<Vec<&'a str>>)> {
             .all(|c| (c == 'd' || c == 'D' || c == 'w' || c == 'W' || c.is_numeric()))
             && token.contains(|c| (c == 'd' || c == 'D' || c == 'w' || c == 'W'))
         {
-            let roll = match evaluate_roll(Roll{roll_string : token.to_string(), roll_result : 0, roll_values : vec![]}) {
+            let roll = match evaluate_roll(Roll {
+                roll_string: token.to_string(),
+                roll_result: 0,
+                roll_values: vec![],
+            }) {
                 Some(roll) => roll,
                 None => return None,
             };
@@ -153,7 +142,7 @@ fn create_result<'a>(input: &'a str) -> Option<(Vec<Roll>, Box<Vec<&'a str>>)> {
 }
 
 fn evaluate_roll(mut roll: Roll) -> Option<Roll> {
-    let re = Regex::new(r"(\d{1,2})[dDwW](\d{1,2})").unwrap();
+    let re = Regex::new(r"(\d{1,3})[dDwW](\d{1,3})").unwrap();
     let m = re.captures(&roll.roll_string.trim()).unwrap();
     roll.roll_values = match roll_dice(
         m.get(1)
@@ -171,14 +160,76 @@ fn evaluate_roll(mut roll: Roll) -> Option<Roll> {
     Some(roll)
 }
 
-fn roll_dice(amount: u32, eyes: u32) -> Option<Vec<u32>> {
-    let mut results = vec![];
-    if amount > 64 ||  eyes > 64 {
-        return None;
+//replace rand function with a deterministic one for tests
+cfg_if::cfg_if! {
+    if #[cfg(test)] {
+        fn roll_dice(amount: u32 , eyes: u32) -> Option<Vec<u32>> {
+            let mut results = vec![];
+            if amount > 64 ||  eyes > 64 {
+                return None;
+            }
+            for _ in 0..amount {
+                let result = eyes / 2; // high end of range is exclusive!
+                results.push(result);
+            }
+            Some(results)
+        }
+    } else {
+        fn roll_dice(amount: u32, eyes: u32) -> Option<Vec<u32>> {
+        let mut results = vec![];
+        if amount > 64 ||  eyes > 64 {
+            return None;
+        }
+        for _ in 0..amount {
+            let result = rand::thread_rng().gen_range(1, eyes + 1); // high end of range is exclusive!
+            results.push(result);
+        }
+        Some(results)
+        }
     }
-    for _ in 0..amount {
-        let result = rand::thread_rng().gen_range(1, eyes + 1); // high end of range is exclusive!
-        results.push(result);
+}
+
+#[test]
+#[ignore]
+fn test_roll_interactive() {
+    let mut input = String::new();
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Line could not be read!");
+    let test = create_result(&input);
+    let test = match test {
+        Some(r) => r,
+        None => return,
+    };
+    let value = sum_rolls(&test);
+    let result = create_result_string(&test);
+    println!("Value {}", value);
+    println!("Result {}", result);
+}
+
+#[test]
+fn test_roll() {
+    let input = vec!["2w10", "5W6 + 3", "3 + 4D6", "2d10+5"];
+    let output: Vec<u32> = vec![10, 18, 15, 15];
+    for (i, token) in input.iter().enumerate() {
+        let result = match create_result(token) {
+            Some(r) => r,
+            None => panic!("Create result failed in test {}", token),
+        };
+        let value = sum_rolls(&result);
+        if value != output[i] {
+            panic!("Wrong calculation");
+        }
     }
-    Some(results)
+}
+#[test]
+fn test_should_fail() {
+    let input = vec!["2.5w10", "(5+4)W6 + 3", "3 + 4^3D6", "2d100+5"];
+
+    for token in input {
+        match create_result(token) {
+            Some(r) => panic!("Returned value {:?} for invalid input {}", r, token),
+            None => (),
+        };
+    }
 }
