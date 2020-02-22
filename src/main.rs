@@ -31,7 +31,7 @@ use commands::spell::*;
 group!({
     name: "spelltome",
     options: {},
-    commands: [get_spell, test, roll]
+    commands: [get_spell]
 });
 group!({
     name: "dice",
@@ -67,6 +67,22 @@ fn main() {
     env_logger::init();
 
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
+    let prefix = match env::var("DISCORD_PREFIX") {
+        Ok(some) => some,
+        Err(_e) => String::from("~"),
+    };
+    let delay_: i64 = match env::var("DISCORD_DELAY") {
+        Ok(some) => some.parse().unwrap(),
+        Err(_e) => 2,
+    };
+    let time_span_: i64 = match env::var("DISCORD_TIME_SPAN") {
+        Ok(some) => some.parse().unwrap(),
+        Err(_e) => 30,
+    };
+    let limit_: i32 = match env::var("DISCORD_LIMIT") {
+        Ok(some) => some.parse().unwrap(),
+        Err(_e) => 3,
+    };
 
     let mut client = Client::new(&token, Handler).expect("Err creating client");
 
@@ -87,7 +103,10 @@ fn main() {
 
     client.with_framework(
         StandardFramework::new()
-            .configure(|c| c.owners(owners).prefix("~"))
+            .configure(|c| c.owners(owners).prefix(&prefix))
+            .bucket("basic", |b| {
+                b.delay(delay_).time_span(time_span_).limit(limit_)
+            })
             .group(&SPELLTOME_GROUP)
             .group(&DICE_GROUP),
     );

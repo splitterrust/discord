@@ -6,14 +6,13 @@ use serenity::framework::standard::{
     CommandError,
     CommandResult,
 };
-use serenity::http::AttachmentType;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use splitterrust_db::models::spell_schools::Spell as SpellSchools;
 use std::env;
-use std::path::Path;
 
 #[command]
+#[bucket = "basic"]
 pub fn get_spell(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     let name = args.rest();
     // TODO get this only once and pass it to the functions
@@ -66,47 +65,4 @@ pub fn get_spell(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult 
             Err(CommandError::from(e))
         }
     }
-}
-
-#[command]
-pub fn test(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
-    let msg = msg.channel_id.send_message(&ctx.http, |m| {
-        m.content("Hello, World!");
-        m.embed(|e| {
-            e.title("This is a title");
-            e.description("This is a description");
-            // e.image("attachment://splittermond_logo.png");
-            e.fields(vec![
-                ("This is the first field", "This is a field body", true),
-                (
-                    "This is the second field",
-                    "Both of these fields are inline",
-                    true,
-                ),
-            ]);
-            e.field(
-                "This is the third field",
-                "This is not an inline field",
-                false,
-            );
-            e.footer(|f| {
-                f.text("This is a footer");
-
-                f
-            });
-            e.color((0, 255, 0));
-            e.thumbnail("attachment://splittermond_logo.png");
-
-            e
-        });
-        m.add_file(AttachmentType::Path(Path::new(
-            "./src/static/splittermond_logo.png",
-        )));
-        m
-    });
-    if let Err(why) = msg {
-        error!("Error sending message: {:?}", why);
-        return Err(CommandError::from(why));
-    }
-    Ok(())
 }
