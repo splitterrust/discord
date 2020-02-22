@@ -1,4 +1,3 @@
-use cfg_if;
 use log::error;
 use regex::Regex;
 use serenity::framework::standard::{
