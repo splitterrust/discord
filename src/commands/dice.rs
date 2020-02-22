@@ -1,11 +1,21 @@
 use cfg_if;
-use log::{error, info};
-use rand::Rng;
+use log::error;
 use regex::Regex;
-use serenity::framework::standard::{macros::command, Args, CommandError, CommandResult};
+use serenity::framework::standard::{
+    macros::command,
+    Args,
+    CommandError,
+    CommandResult,
+};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-use std::io;
+cfg_if::cfg_if! {
+    if #[cfg(test)] {
+        use std::io;
+    } else {
+        use rand::Rng;
+    }
+}
 
 #[derive(Debug)]
 struct Roll {
@@ -63,7 +73,7 @@ pub fn roll(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     Ok(())
 }
 
-fn sum_rolls<'a>(result: &(Vec<Roll>, Box<Vec<&'a str>>)) -> u32 {
+fn sum_rolls<'a>(result: &(Vec<Roll>, Vec<&'a str>)) -> u32 {
     let mut rolls_summed: u32 = result.0[0].roll_result;
     for (i, operator) in result.1.iter().enumerate() {
         match operator.trim() {
@@ -77,7 +87,7 @@ fn sum_rolls<'a>(result: &(Vec<Roll>, Box<Vec<&'a str>>)) -> u32 {
     rolls_summed
 }
 
-fn create_result_string(result: &(Vec<Roll>, Box<Vec<&str>>)) -> String {
+fn create_result_string(result: &(Vec<Roll>, Vec<&str>)) -> String {
     let rolls = &result.0;
     let operators = &result.1;
     let mut roll_result_string = String::new();
@@ -92,7 +102,7 @@ fn create_result_string(result: &(Vec<Roll>, Box<Vec<&str>>)) -> String {
     roll_result_string
 }
 
-fn create_result<'a>(input: &'a str) -> Option<(Vec<Roll>, Box<Vec<&'a str>>)> {
+fn create_result<'a>(input: &'a str) -> Option<(Vec<Roll>, Vec<&'a str>)> {
     let operations: Vec<&str> = input
         .matches(|c| (c == '+' || c == '-' || c == '*' || c == '/'))
         .collect();
@@ -137,8 +147,7 @@ fn create_result<'a>(input: &'a str) -> Option<(Vec<Roll>, Box<Vec<&'a str>>)> {
             return None;
         }
     }
-    let operators = Box::new(operations);
-    Some((rolls, operators))
+    Some((rolls, operations))
 }
 
 fn evaluate_roll(mut roll: Roll) -> Option<Roll> {
