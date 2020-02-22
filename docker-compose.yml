@@ -7,6 +7,11 @@ services:
     ports:
       - 5433:5432
     env_file: .env_docker
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   server:
     image: splitterrust_server
@@ -14,8 +19,15 @@ services:
     ports:
         - 8088:8088
     env_file: .env_docker
+    depends_on:
+      - db
+    links:
+      - db  # this enables dns resolution to the db container
 
   discord:
     image: splitterrust_discord
     env_file: .env_docker
-
+    depends_on:
+      - server
+    links:
+      - server  # this enables dns resolution to the server container

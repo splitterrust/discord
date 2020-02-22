@@ -1,0 +1,38 @@
+language: rust
+dist: bionic
+branches:
+  only:
+  - master
+  - dev
+rust:
+  - stable
+  - nightly
+  - beta
+cache:
+  directories:
+    - $HOME/.cargo
+    - $HOME/.rustup
+before_script:
+  - pip install 'travis-cargo<0.2' --user
+  - export PATH=$HOME/.local/bin:$PATH
+script:
+  - cargo test
+  - cargo build
+jobs:
+  allow_failures:
+    - rust: beta
+  fast_finish: true
+matrix:
+  include:
+  - rust: nightly-2020-02-05
+    name: "Rustfmt & Clippy"
+    script:
+    - rustup component add rustfmt clippy
+    - cargo clippy  # -- -D warnings # Add this again when the PR 5183 was released
+    - cargo fmt -- --check
+    - cargo test
+  - rust: 1.40.0
+    name: "Minimal supported rust version == 1.40.0"
+    script:
+    - cargo check
+    - cargo test

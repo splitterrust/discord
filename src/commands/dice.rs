@@ -41,6 +41,7 @@ impl Roll {
 }
 
 #[command]
+#[bucket = "basic"]
 pub fn roll(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     let input = args.rest().to_string();
     // TODO get this only once and pass it to the functions
