@@ -7,7 +7,7 @@ FROM debian:buster-slim
 RUN groupadd -r splitterrust && useradd -r -s /bin/false -g splitterrust splitterrust
 RUN apt-get update && apt-get install -y libpq5
 
-ENV DISCORD /usr/local/bin/splitterrust_discord
+ENV DISCORD /usr/local/cargo/bin/splitterrust_discord
 
 COPY --from=builder $DISCORD $DISCORD
 COPY docker_entrypoint.sh /usr/local/bin/
