@@ -31,7 +31,7 @@ use commands::spell::*;
 group!({
     name: "spelltome",
     options: {},
-    commands: [get_spell]
+    commands: [get_spell, search_spells]
 });
 group!({
     name: "dice",
