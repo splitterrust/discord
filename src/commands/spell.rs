@@ -1,4 +1,8 @@
-use log::error;
+use log::{
+    debug,
+    error,
+    info,
+};
 use percent_encoding::{
     utf8_percent_encode,
     AsciiSet,
@@ -23,6 +27,7 @@ const FRAGMENT: &AsciiSet = &CONTROLS.add(b' ').add(b'%');
 pub fn search_spells(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     let name = args.rest();
     if name.len() > 15 {
+        info!("Search string was longer than 15: {}", &name);
         let msg = msg.channel_id.send_message(&ctx.http, |m| {
             m.content(
                 "Spell name to long. If you think this is false-positive contact the owner of \
@@ -96,6 +101,7 @@ pub fn search_spells(ctx: &mut Context, msg: &Message, args: Args) -> CommandRes
 pub fn get_spell(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     let name = args.rest();
     if name.len() > 15 || name.contains('%') {
+        info!("Search string was longer than 15 or contains %: {}", &name);
         let msg = msg.channel_id.send_message(&ctx.http, |m| {
             m.content(
                 "Spell name to long or invalid characters detected. If you think this is \
@@ -115,11 +121,11 @@ pub fn get_spell(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult 
     let server =
         env::var("BACKEND_SERVER").expect("Expected the BACKEND_SERVER in the environment");
     let url = Url::parse(&format!("{}/spell/{}", server, name))?;
-    println!("{}", &url);
+    debug!("{}", &url);
 
     match reqwest::get(url) {
         Ok(mut result) => {
-            let json: SpellSchools = match result.json() {
+            let json_vec: Vec<SpellSchools> = match result.json() {
                 Ok(j) => j,
                 Err(e) => {
                     error!("Error retrieving json: {:?}", e);
@@ -134,6 +140,8 @@ pub fn get_spell(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult 
                     return Ok(());
                 }
             };
+
+            let json = &json_vec[0];
 
             let msg = msg.channel_id.send_message(&ctx.http, |m| {
                 m.content("Here is your Spell");
