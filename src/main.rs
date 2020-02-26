@@ -1,6 +1,7 @@
 use dotenv::dotenv;
 
 use std::{
+    collections::HashMap,
     collections::HashSet,
     env,
     sync::Arc,
@@ -26,12 +27,13 @@ use log::{
 
 mod commands;
 use commands::dice::*;
+use commands::general::*;
 use commands::spell::*;
 
 group!({
     name: "spelltome",
     options: {},
-    commands: [get_spell]
+    commands: [get_spell, search_spells]
 });
 group!({
     name: "dice",
@@ -55,6 +57,12 @@ impl EventHandler for Handler {
     fn resume(&self, _: Context, _: ResumedEvent) {
         info!("Resumed");
     }
+}
+
+struct SharedData;
+
+impl TypeMapKey for SharedData {
+    type Value = HashMap<String, String>;
 }
 
 fn main() {
@@ -85,9 +93,13 @@ fn main() {
     };
 
     let mut client = Client::new(&token, Handler).expect("Err creating client");
-
     {
         let mut data = client.data.write();
+        let server =
+            env::var("BACKEND_SERVER").expect("Expected the BACKEND_SERVER in the environment");
+        let mut value: HashMap<String, String> = HashMap::new();
+        value.insert("BACKEND_SERVER".to_string(), server);
+        data.insert::<SharedData>(value);
         data.insert::<ShardManagerContainer>(Arc::clone(&client.shard_manager));
     }
 
@@ -108,7 +120,8 @@ fn main() {
                 b.delay(delay_).time_span(time_span_).limit(limit_)
             })
             .group(&SPELLTOME_GROUP)
-            .group(&DICE_GROUP),
+            .group(&DICE_GROUP)
+            .help(&MY_HELP),
     );
 
     if let Err(why) = client.start() {
