@@ -18,7 +18,8 @@ use serenity::framework::standard::{
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use splitterrust_db::models::spell_schools::Spell as SpellSchools;
-use std::env;
+
+use crate::SharedData;
 
 const FRAGMENT: &AsciiSet = &CONTROLS.add(b' ').add(b'%');
 
@@ -42,8 +43,12 @@ pub fn search_spells(ctx: &mut Context, msg: &Message, args: Args) -> CommandRes
         return Ok(());
     }
 
-    let server =
-        env::var("BACKEND_SERVER").expect("Expected the BACKEND_SERVER in the environment");
+    let data = ctx.data.read();
+    let shared_data = data.get::<SharedData>().unwrap();
+    let server = match shared_data.get("BACKEND_SERVER") {
+        Some(s) => s,
+        None => return Err(CommandError::from("Failed to connec to server")),
+    };
     let url_ = utf8_percent_encode(&format!("{}/spell/{}", server, name), FRAGMENT).to_string();
     let url = Url::parse(&url_)?;
 
@@ -116,10 +121,12 @@ pub fn get_spell(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult 
         return Ok(());
     }
 
-    // TODO get this only once and pass it to the functions
-    //      each call to env would be expensive
-    let server =
-        env::var("BACKEND_SERVER").expect("Expected the BACKEND_SERVER in the environment");
+    let data = ctx.data.read();
+    let shared_data = data.get::<SharedData>().unwrap();
+    let server = match shared_data.get("BACKEND_SERVER") {
+        Some(s) => s,
+        None => return Err(CommandError::from("Failed to connec to server")),
+    };
     let url = Url::parse(&format!("{}/spell/{}", server, name))?;
     debug!("{}", &url);
 
